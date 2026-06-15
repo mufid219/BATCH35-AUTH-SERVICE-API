@@ -5,6 +5,17 @@ const AuthRepository = {
 
   // ── USER ──────────────────────────────────────────────────
 
+    async updatePassword(userid, password) {
+    const r = await query(
+      `update users
+        set password= :passwordHash
+        where user_id=:userid`,
+      { passwordHash,userid }
+    );
+    return r.rows[0] || null;
+  },
+
+
   async findByEmail(email) {
     const r = await query(
       `SELECT user_id, username, email, password_hash, full_name,

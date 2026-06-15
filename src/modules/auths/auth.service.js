@@ -9,6 +9,7 @@ const authHelper = require('./auth.helper');
 
 const AuthService = {
 
+
   // ── 1. SIGNUP ─────────────────────────────────────────────
   async signup({ username, email, password, fullName }, meta = {}) {
     // Validasi duplikat
@@ -20,7 +21,7 @@ const AuthService = {
     if (existUsername) throw new AppError('Username sudah dipakai', 409);
 
     // Hash password
-    const passwordHash = await argon2.hash(password, config.argon2);
+    const passwordHash = await argon2.hash(password, config.argon2);//generate 65mb
 
     // Buat user (is_active = 0, belum verified)
     const userId = await AuthRepository.createUser({

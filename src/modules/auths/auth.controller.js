@@ -12,7 +12,7 @@ const AuthController = {
   // POST /auth/signup
   async signup(req, res, next) {
     try {
-      const { username, email, password, fullName } = req.body;
+      const { username, email, password, fullName } = req.body; //ekstrak data json ke variables
       const data = await AuthService.signup(
         { username, email, password, fullName },
         getMeta(req)
