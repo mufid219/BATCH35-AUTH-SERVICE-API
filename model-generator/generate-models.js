@@ -16,6 +16,8 @@ const path     = require('path');
 
 oracledb.initOracleClient();
 
+//oracledb.initOracleClient();
+
 // ── Config ────────────────────────────────────────────────
 const DB = {
   user:          process.env.DB_USER     || 'hr',
