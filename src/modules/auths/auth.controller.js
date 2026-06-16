@@ -1,24 +1,30 @@
-const AuthService = require('./auth.service');
-const response    = require('../../shared/utils/response');
+const AuthService = require("./auth.service");
+const response = require("../../shared/utils/response");
 
 // Helper ambil meta dari request
 const getMeta = (req) => ({
-  ip:        req.ip || req.headers['x-forwarded-for'] || 'unknown',
-  userAgent: req.headers['user-agent'] || 'unknown',
+  ip: req.ip || req.headers["x-forwarded-for"] || "unknown",
+  userAgent: req.headers["user-agent"] || "unknown",
 });
 
 const AuthController = {
-
   // POST /auth/signup
   async signup(req, res, next) {
     try {
       const { username, email, password, fullName } = req.body; //ekstrak data json ke variables
       const data = await AuthService.signup(
         { username, email, password, fullName },
-        getMeta(req)
+        getMeta(req),
       );
-      response.success(res, data, 'Registrasi berhasil. Cek email untuk kode OTP.', 201);
-    } catch (e) { next(e); }
+      response.success(
+        res,
+        data,
+        "Registrasi berhasil. Cek email untuk kode OTP.",
+        201,
+      );
+    } catch (e) {
+      next(e);
+    }
   },
 
   // POST /auth/send-otp
@@ -26,35 +32,52 @@ const AuthController = {
     try {
       const { email, purpose } = req.body;
       const data = await AuthService.sendOtp({ email, purpose }, getMeta(req));
-      response.success(res, data, 'OTP berhasil dikirim');
-    } catch (e) { next(e); }
+      response.success(res, data, "OTP berhasil dikirim");
+    } catch (e) {
+      next(e);
+    }
   },
 
   // POST /auth/verify-otp
   async verifyOtp(req, res, next) {
     try {
       const { email, otp, purpose } = req.body;
-      const data = await AuthService.verifyOtp({ email, otp, purpose }, getMeta(req));
-      response.success(res, data, data.message || 'OTP berhasil diverifikasi');
-    } catch (e) { next(e); }
+      const data = await AuthService.verifyOtp(
+        { email, otp, purpose },
+        getMeta(req),
+      );
+      response.success(res, data, data.message || "OTP berhasil diverifikasi");
+    } catch (e) {
+      next(e);
+    }
   },
 
   // POST /auth/login
   async login(req, res, next) {
     try {
       const { identifier, password } = req.body;
-      const data = await AuthService.login({ identifier, password }, getMeta(req));
-      response.success(res, data, 'Login berhasil');
-    } catch (e) { next(e); }
+      const data = await AuthService.login(
+        { identifier, password },
+        getMeta(req),
+      );
+      response.success(res, data, "Login berhasil");
+    } catch (e) {
+      next(e);
+    }
   },
 
   // POST /auth/refresh
   async refresh(req, res, next) {
     try {
       const { refreshToken } = req.body;
-      const data = await AuthService.refreshToken({ refreshToken }, getMeta(req));
-      response.success(res, data, 'Token berhasil diperbarui');
-    } catch (e) { next(e); }
+      const data = await AuthService.refreshToken(
+        { refreshToken },
+        getMeta(req),
+      );
+      response.success(res, data, "Token berhasil diperbarui");
+    } catch (e) {
+      next(e);
+    }
   },
 
   // POST /auth/logout
@@ -63,18 +86,34 @@ const AuthController = {
       const { refreshToken } = req.body;
       const data = await AuthService.logout(
         { userId: req.user.sub, jti: req.user.jti, refreshToken },
-        getMeta(req)
+        getMeta(req),
       );
-      response.success(res, data, 'Logout berhasil');
-    } catch (e) { next(e); }
+      response.success(res, data, "Logout berhasil");
+    } catch (e) {
+      next(e);
+    }
   },
 
   // GET /auth/me
   async me(req, res, next) {
     try {
       const data = await AuthService.me(req.user.sub);
-      response.success(res, data, 'Data user berhasil diambil');
-    } catch (e) { next(e); }
+      response.success(res, data, "Data user berhasil diambil");
+    } catch (e) {
+      next(e);
+    }
+  },
+
+  async resetPassword(req, res, next) {
+    try {
+      const { email, newPassword } = req.body;
+
+      const data = await AuthService.resetPassword({ email, newPassword });
+
+      response.success(res, data, "Password berhasil diperbaharui");
+    } catch (error) {
+      next(error);
+    }
   },
 };
 

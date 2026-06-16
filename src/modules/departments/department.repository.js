@@ -1,4 +1,4 @@
-const { query } = require('../../shared/utils/db');
+const { query } = require("../../shared/utils/db");
 
 const DepartmentRepository = {
   async findAll() {
@@ -29,10 +29,13 @@ const DepartmentRepository = {
     `;
     const binds = {
       department_name: data.department_name.trim(),
-      out_id: { dir: require('oracledb').BIND_OUT, type: require('oracledb').NUMBER },
+      out_id: {
+        dir: require("oracledb").BIND_OUT,
+        type: require("oracledb").NUMBER,
+      },
     };
     const result = await query(sql, binds);
-    const newId  = result.outBinds.out_id[0];
+    const newId = result.outBinds.out_id[0];
     return this.findById(newId);
   },
 

@@ -1,5 +1,5 @@
-const express      = require('express');
-const AuthController = require('./auth.controller');
+const express = require("express");
+const AuthController = require("./auth.controller");
 const {
   validateSignup,
   validateLogin,
@@ -7,8 +7,9 @@ const {
   validateVerifyOtp,
   validateRefresh,
   validateLogout,
-} = require('./auth.validator');
-const authenticate = require('../../shared/middlewares/authenticate');
+  validateResetPassword,
+} = require("./auth.validator");
+const authenticate = require("../../shared/middlewares/authenticate");
 
 const router = express.Router();
 
@@ -19,7 +20,7 @@ const router = express.Router();
  * @desc   Daftar akun baru, kirim OTP ke email
  * @access Public
  */
-router.post('/signup', validateSignup, AuthController.signup);
+router.post("/signup", validateSignup, AuthController.signup);
 
 /**
  * @route  POST /api/auth/send-otp
@@ -27,7 +28,7 @@ router.post('/signup', validateSignup, AuthController.signup);
  * @access Public
  * @body   { email, purpose: EMAIL_VERIFY | PASSWORD_RESET | ... }
  */
-router.post('/send-otp', validateSendOtp, AuthController.sendOtp);
+router.post("/send-otp", validateSendOtp, AuthController.sendOtp);
 
 /**
  * @route  POST /api/auth/verify-otp
@@ -35,7 +36,7 @@ router.post('/send-otp', validateSendOtp, AuthController.sendOtp);
  * @access Public
  * @body   { email, otp, purpose }
  */
-router.post('/verify-otp', validateVerifyOtp, AuthController.verifyOtp);
+router.post("/verify-otp", validateVerifyOtp, AuthController.verifyOtp);
 
 /**
  * @route  POST /api/auth/login
@@ -43,7 +44,7 @@ router.post('/verify-otp', validateVerifyOtp, AuthController.verifyOtp);
  * @access Public
  * @body   { identifier: email|username, password }
  */
-router.post('/login', validateLogin, AuthController.login);
+router.post("/login", validateLogin, AuthController.login);
 
 /**
  * @route  POST /api/auth/refresh
@@ -51,7 +52,7 @@ router.post('/login', validateLogin, AuthController.login);
  * @access Public
  * @body   { refreshToken }
  */
-router.post('/refresh', validateRefresh, AuthController.refresh);
+router.post("/refresh", validateRefresh, AuthController.refresh);
 
 // ── PROTECTED routes ──────────────────────────────────────
 
@@ -61,13 +62,20 @@ router.post('/refresh', validateRefresh, AuthController.refresh);
  * @access Private
  * @body   { refreshToken }
  */
-router.post('/logout', authenticate, validateLogout, AuthController.logout);
+router.post("/logout", authenticate, validateLogout, AuthController.logout);
 
 /**
  * @route  GET /api/auth/me
  * @desc   Ambil data user yang sedang login + roles + permissions
  * @access Private
  */
-router.get('/me', authenticate, AuthController.me);
+router.get("/me", authenticate, AuthController.me);
+
+router.put(
+  "/password/reset",
+  authenticate,
+  validateResetPassword,
+  AuthController.resetPassword,
+);
 
 module.exports = router;

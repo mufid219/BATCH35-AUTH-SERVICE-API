@@ -1,20 +1,21 @@
-const oracledb = require('oracledb');
-const { query } = require('../../shared/utils/db');
+const oracledb = require("oracledb");
+const { query } = require("../../shared/utils/db");
 
 const AuthRepository = {
-
   // ── USER ──────────────────────────────────────────────────
 
-    async updatePassword(userid, password) {
+  async updatePassword(email, passwordHash) {
     const r = await query(
       `update users
-        set password= :passwordHash
-        where user_id=:userid`,
-      { passwordHash,userid }
+        set password_hash = :passwordHash
+        WHERE email = :email`,
+      {
+        email,
+        passwordHash,
+      },
     );
-    return r.rows[0] || null;
+    return r.rowsAffected > 0;
   },
-
 
   async findByEmail(email) {
     const r = await query(
@@ -23,7 +24,7 @@ const AuthRepository = {
        FROM   users
        WHERE  email      = :email
          AND  deleted_at IS NULL`,
-      { email }
+      { email },
     );
     return r.rows[0] || null;
   },
@@ -35,7 +36,7 @@ const AuthRepository = {
        FROM   users
        WHERE  username   = :username
          AND  deleted_at IS NULL`,
-      { username }
+      { username },
     );
     return r.rows[0] || null;
   },
@@ -46,9 +47,12 @@ const AuthRepository = {
        VALUES (seq_users.NEXTVAL, :username, :email, :passwordHash, :fullName)
        RETURNING user_id INTO :out_id`,
       {
-        username, email, passwordHash, fullName,
+        username,
+        email,
+        passwordHash,
+        fullName,
         out_id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
-      }
+      },
     );
     return r.outBinds.out_id[0];
   },
@@ -58,7 +62,7 @@ const AuthRepository = {
       `UPDATE users
        SET    is_active = 1, is_email_verified = 1, email_verified_at = SYSTIMESTAMP
        WHERE  user_id   = :userId`,
-      { userId }
+      { userId },
     );
   },
 
@@ -70,14 +74,14 @@ const AuthRepository = {
          SET    failed_attempts = failed_attempts + 1,
                 locked_until    = :lockoutAt
          WHERE  user_id         = :userId`,
-        { userId, lockoutAt }
+        { userId, lockoutAt },
       );
     } else {
       await query(
         `UPDATE users
          SET    failed_attempts = failed_attempts + 1
          WHERE  user_id         = :userId`,
-        { userId }
+        { userId },
       );
     }
   },
@@ -90,7 +94,7 @@ const AuthRepository = {
               last_login_at   = SYSTIMESTAMP,
               last_login_ip   = :ipAddress
        WHERE  user_id         = :userId`,
-      { userId, ipAddress }
+      { userId, ipAddress },
     );
   },
 
@@ -104,7 +108,7 @@ const AuthRepository = {
        FROM   roles
        WHERE  role_code = 'USER'
          AND  is_active = 1`,
-      { userId }
+      { userId },
     );
   },
 
@@ -120,7 +124,7 @@ const AuthRepository = {
                            AND r.is_active = 1
        WHERE  ur.user_id   = :userId
          AND  (ur.expires_at IS NULL OR ur.expires_at > SYSTIMESTAMP)`,
-      { userId }
+      { userId },
     );
 
     // Permissions (dari semua role yang dimiliki user)
@@ -133,22 +137,36 @@ const AuthRepository = {
                                    AND r.is_active     = 1
        WHERE  ur.user_id        = :userId
          AND  (ur.expires_at IS NULL OR ur.expires_at > SYSTIMESTAMP)`,
-      { userId }
+      { userId },
     );
 
     return {
-      roles:       rolesResult.rows,
+      roles: rolesResult.rows,
       permissions: permsResult.rows,
     };
   },
 
   // ── TOKENS ────────────────────────────────────────────────
 
-  async saveToken({ userId, tokenType, tokenValue, expiresAt, deviceInfo, ipAddress }) {
+  async saveToken({
+    userId,
+    tokenType,
+    tokenValue,
+    expiresAt,
+    deviceInfo,
+    ipAddress,
+  }) {
     await query(
       `INSERT INTO user_tokens (token_id, user_id, token_type, token_value, expires_at, device_info, ip_address)
        VALUES (seq_user_tokens.NEXTVAL, :userId, :tokenType, :tokenValue, :expiresAt, :deviceInfo, :ipAddress)`,
-      { userId, tokenType, tokenValue, expiresAt, deviceInfo: deviceInfo || null, ipAddress: ipAddress || null }
+      {
+        userId,
+        tokenType,
+        tokenValue,
+        expiresAt,
+        deviceInfo: deviceInfo || null,
+        ipAddress: ipAddress || null,
+      },
     );
   },
 
@@ -160,26 +178,26 @@ const AuthRepository = {
          AND  token_type  = 'REFRESH'
          AND  is_revoked  = 0
          AND  expires_at  > SYSTIMESTAMP`,
-      { tokenValue }
+      { tokenValue },
     );
     return r.rows[0] || null;
   },
 
-  async revokeAllUserTokens(userId, revokedBy = 'LOGOUT') {
+  async revokeAllUserTokens(userId, revokedBy = "LOGOUT") {
     await query(
       `UPDATE user_tokens
        SET    is_revoked = 1, revoked_at = SYSTIMESTAMP, revoked_by = :revokedBy
        WHERE  user_id    = :userId AND is_revoked = 0`,
-      { userId, revokedBy }
+      { userId, revokedBy },
     );
   },
 
-  async revokeToken(tokenValue, revokedBy = 'LOGOUT') {
+  async revokeToken(tokenValue, revokedBy = "LOGOUT") {
     await query(
       `UPDATE user_tokens
        SET    is_revoked = 1, revoked_at = SYSTIMESTAMP, revoked_by = :revokedBy
        WHERE  token_value = :tokenValue`,
-      { tokenValue, revokedBy }
+      { tokenValue, revokedBy },
     );
   },
 
@@ -190,13 +208,13 @@ const AuthRepository = {
     await query(
       `UPDATE otp_codes SET is_used = 1
        WHERE  user_id  = :userId AND purpose = :purpose AND is_used = 0`,
-      { userId, purpose }
+      { userId, purpose },
     );
 
     await query(
       `INSERT INTO otp_codes (otp_id, user_id, otp_hash, purpose, expires_at)
        VALUES (seq_otp_codes.NEXTVAL, :userId, :otpHash, :purpose, :expiresAt)`,
-      { userId, otpHash, purpose, expiresAt }
+      { userId, otpHash, purpose, expiresAt },
     );
   },
 
@@ -214,7 +232,7 @@ const AuthRepository = {
          ORDER  BY created_at DESC
        )
        WHERE ROWNUM = 1`,
-      { userId, purpose }
+      { userId, purpose },
     );
     return r.rows[0] || null;
   },
@@ -222,31 +240,38 @@ const AuthRepository = {
   async incrementOtpAttempts(otpId) {
     await query(
       `UPDATE otp_codes SET attempts = attempts + 1 WHERE otp_id = :otpId`,
-      { otpId }
+      { otpId },
     );
   },
 
   async markOtpUsed(otpId) {
     await query(
       `UPDATE otp_codes SET is_used = 1, used_at = SYSTIMESTAMP WHERE otp_id = :otpId`,
-      { otpId }
+      { otpId },
     );
   },
 
   // ── AUDIT ─────────────────────────────────────────────────
 
-  async createAuditLog({ userId, action, status, ipAddress, userAgent, detail }) {
+  async createAuditLog({
+    userId,
+    action,
+    status,
+    ipAddress,
+    userAgent,
+    detail,
+  }) {
     await query(
       `INSERT INTO audit_logs (log_id, user_id, action, status, ip_address, user_agent, detail)
        VALUES (seq_audit_logs.NEXTVAL, :userId, :action, :status, :ipAddress, :userAgent, :detail)`,
       {
-        userId:    userId    || null,
+        userId: userId || null,
         action,
         status,
         ipAddress: ipAddress || null,
         userAgent: userAgent || null,
-        detail:    detail    || null,
-      }
+        detail: detail || null,
+      },
     );
   },
 };
